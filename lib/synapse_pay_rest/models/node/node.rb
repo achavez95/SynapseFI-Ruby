@@ -1,6 +1,6 @@
 module SynapsePayRest
   # Factory for BaseNode subclasses.
-  # 
+  #
   # @todo use mixins to remove duplication between Node and BaseNode
   module Node
 
@@ -33,33 +33,33 @@ module SynapsePayRest
     class << self
       # Queries the API for a node with the supplied id belong to the supplied user,
       # and returns a node instance from the response data.
-      # 
+      #
       # @param user [SynapsePayRest::User]
       # @param id [String] id of the node to find
       # @param full_dehydrate [String] (optional) if 'yes', returns all trans data on node
-      # 
+      #
       # @raise [SynapsePayRest::Error] if HTTP error
-      # 
+      #
       # @return [SynapsePayRest::BaseNode] subclass depends on node type
-      def find(user:, id:, full_dehydrate: 'no')
+      def find(user:, id:, full_dehydrate: 'no', force_refresh: 'no')
         raise ArgumentError, 'user must be a User object' unless user.is_a?(User)
         raise ArgumentError, 'id must be a String' unless id.is_a?(String)
 
-        response = user.client.nodes.get(user_id: user.id, node_id: id, full_dehydrate: full_dehydrate)
+        response = user.client.nodes.get(user_id: user.id, node_id: id, full_dehydrate: full_dehydrate, force_refresh: force_refresh)
         from_response(user, response)
       end
 
       # Queries the API for all nodes belonging to the supplied user (with optional
       # filters) and returns them as node instances.
-      # 
+      #
       # @param user [SynapsePayRest::User]
       # @param page [String,Integer] (optional) response will default to 1
       # @param per_page [String,Integer] (optional) response will default to 20
       # @param type [String] (optional)
       # @see https://docs.synapsepay.com/docs/node-resources node types
-      # 
+      #
       # @raise [SynapsePayRest::Error] if HTTP error or invalid argument format
-      # 
+      #
       # @return [Array<SynapsePayRest::BaseNode>] subclass depends on node types
       def all(user:, page: nil, per_page: nil, type: nil)
         raise ArgumentError, 'user must be a User object' unless user.is_a?(User)
@@ -83,15 +83,15 @@ module SynapsePayRest
 
       # Queries the API for all nodes belonging to the supplied user (with optional
       # filters) and matching the given type.
-      # 
+      #
       # @param user [SynapsePayRest::User]
       # @param type [String]
       # @see https://docs.synapsepay.com/docs/node-resources node types
       # @param page [String,Integer] (optional) response will default to 1
       # @param per_page [String,Integer] (optional) response will default to 20
-      # 
+      #
       # @raise [SynapsePayRest::Error] if HTTP error or invalid argument format
-      # 
+      #
       # @return [Array<SynapsePayRest::BaseNode>] BaseNode will be subclass corresponding to type arg
       def by_type(user:, type:, page: nil, per_page: nil)
         all(user: user, page: page, per_page: per_page, type: type)

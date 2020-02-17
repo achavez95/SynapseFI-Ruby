@@ -40,7 +40,6 @@ module SynapsePayRest
 
       path = node_path(user_id: user_id, node_id: node_id)
       path += '?' + params.join('&') if params.any?
-      binding.pry
       client.get(path)
     end
 

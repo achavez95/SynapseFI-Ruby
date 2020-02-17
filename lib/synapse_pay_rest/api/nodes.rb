@@ -3,7 +3,7 @@ module SynapsePayRest
   class Nodes
     # Valid optional args for #get
     # @todo Should refactor this to HTTPClient
-    VALID_QUERY_PARAMS = [:page, :per_page, :type, :full_dehydrate].freeze
+    VALID_QUERY_PARAMS = [:page, :per_page, :type, :full_dehydrate, :force_refresh].freeze
 
     # @!attribute [rw] client
     #   @return [SynapsePayRest::HTTPClient]

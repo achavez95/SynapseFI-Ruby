@@ -4,9 +4,9 @@ module SynapsePayRest
   # from API calls. This is built on top of the SynapsePayRest::Nodes class and
   # is intended to make it easier to use the API without knowing payload formats
   # or knowledge of REST.
-  # 
-  # @todo use mixins to remove duplication between Node and BaseNode. May be 
-  #   better to refactor this into a mixin altogether since this shouldn't be instantiated. 
+  #
+  # @todo use mixins to remove duplication between Node and BaseNode. May be
+  #   better to refactor this into a mixin altogether since this shouldn't be instantiated.
   # @todo reduce duplicated logic between User/BaseNode/Transaction
   class BaseNode
 
@@ -21,23 +21,23 @@ module SynapsePayRest
                 :correspondent_address, :correspondent_swift, :account_id, :balance,
                 :ifsc, :swift, :bank_long_name, :type, :gateway_restricted,
                 :email_match, :name_match, :phonenumber_match, :address_street,
-                :address_city, :address_subdivision, :address_country_code, 
+                :address_city, :address_subdivision, :address_country_code,
                 :address_postal_code, :payee_address, :payee_name, :other, :network,
                 :document_id, :interchange_type, :card_hash, :is_international, :allow_foreign_transactions,
                 :atm_withdrawal_limit, :max_pin_attempts, :pos_withdrawal_limit, :security_alerts,
                 :card_type, :access_token, :portfolio_BTC, :portfolio_ETH, :card_style_id,
-                :monthly_withdrawals_remaining
+                :monthly_withdrawals_remaining, :extra_transactions
 
     class << self
       # Creates a new node in the API associated to the provided user and
       # returns a node instance from the response data. See subclasses for type-specific
       # arguments.
-      # 
+      #
       # @param user [SynapsePayRest::User] user to whom the node belongs
       # @param nickname [String]
-      # 
+      #
       # @raise [SynapsePayRest::Error] if HTTP error or invalid argument format
-      # 
+      #
       # @return [SynapsePayRest::BaseNode]
       def create(user:, nickname:, **options)
         raise ArgumentError, 'user must be a User object' unless user.is_a?(User)
@@ -50,13 +50,13 @@ module SynapsePayRest
 
       # Queries the API for all nodes belonging to the supplied user (with optional
       # filters) and matching the given type of this node.
-      # 
+      #
       # @param user [SynapsePayRest::User]
       # @param page [String,Integer] (optional) response will default to 1
       # @param per_page [String,Integer] (optional) response will default to 20
-      # 
+      #
       # @raise [SynapsePayRest::Error] if HTTP error or invalid argument format
-      # 
+      #
       # @return [Array<SynapsePayRest::BaseNode>] BaseNode will be whatever subclass the method was called on
       def all(user:, page: nil, per_page: nil)
         raise ArgumentError, 'user must be a User object' unless user.is_a?(User)
@@ -68,7 +68,7 @@ module SynapsePayRest
         unless type.nil? || NODE_TYPES_TO_CLASSES.keys.include(type)
           raise ArgumentError, "type must be nil or in #{NODE_TYPES_TO_CLASSES.keys}"
         end
-        
+
         response = user.client.nodes.get(
           user_id: user.id,
           page: page,
@@ -144,7 +144,7 @@ module SynapsePayRest
           args[:user_info] = user_info
 
           transactions = response['extra']['other']['transactions']
-          args[:transactions] = transactions
+          args[:extra_transactions] = transactions
 
           billpay_info = response['extra']['other']['billpay_info']
           args[:billpay_info] = billpay_info
@@ -272,11 +272,11 @@ module SynapsePayRest
         extra_fields.each do |field|
           if options[field]
             payload['extra'] ||= {}
-            payload['extra'][field.to_s] = options[field] 
+            payload['extra'][field.to_s] = options[field]
           end
         end
 
-        payee_address_fields = [:address_street, :address_city, :address_subdivision, 
+        payee_address_fields = [:address_street, :address_city, :address_subdivision,
           :address_country_code, :address_postal_code]
         payee_address_fields.each do |field|
           if options[field]
@@ -297,7 +297,7 @@ module SynapsePayRest
 
     # Creates a transaction belonging to this node and returns it as a Transaction
     # instance.
-    # 
+    #
     # @param to_id [String] node id of the receiving node
     # @param to_type [String] node type of the receiving node
     # @see https://docs.synapsepay.com/docs/node-resources valid node types
@@ -313,7 +313,7 @@ module SynapsePayRest
     # @param idempotency_key [String] (optional) avoid accidentally performing the same operation twice
     #
     # @raise [SynapsePayRest::Error] if HTTP error or invalid argument format
-    # 
+    #
     # @return [SynapsePayRest::Transaction]
     def create_transaction(**options)
       Transaction.create(node: self, **options)
@@ -321,12 +321,12 @@ module SynapsePayRest
 
     # Queries the API for all transactions belonging to this node and returns
     # them as Transaction instances.
-    # 
+    #
     # @param page [String,Integer] (optional) response will default to 1
     # @param per_page [String,Integer] (optional) response will default to 20
-    # 
+    #
     # @raise [SynapsePayRest::Error]
-    # 
+    #
     # @return [Array<SynapsePayRest::Transaction>]
     def transactions(**options)
       Transaction.all(node: self, **options)
@@ -334,11 +334,11 @@ module SynapsePayRest
 
     # Queries the API for a transaction belonging to this node by transaction id
     # and returns a Transaction instance if found.
-    # 
+    #
     # @param id [String] id of the transaction to find
-    # 
+    #
     # @raise [SynapsePayRest::Error] if not found or other HTTP error
-    # 
+    #
     # @return [SynapsePayRest::Transaction]
     def find_transaction(id:)
       raise ArgumentError, 'id must be a String' unless id.is_a?(String)
@@ -348,10 +348,10 @@ module SynapsePayRest
 
     # Creates a subnet belonging to this node and returns it as a Subnet
     # instance.
-    # 
+    #
     #
     # @raise [SynapsePayRest::Error] if HTTP error or invalid argument format
-    # 
+    #
     # @return [SynapsePayRest::Subnet]
     def create_subnet(**options)
       Subnet.create(node: self, **options)
@@ -359,12 +359,12 @@ module SynapsePayRest
 
     # Queries the API for all subnets belonging to this node and returns
     # them as Subnet instances.
-    # 
+    #
     # @param page [String,Integer] (optional) response will default to 1
     # @param per_page [String,Integer] (optional) response will default to 20
-    # 
+    #
     # @raise [SynapsePayRest::Error]
-    # 
+    #
     # @return [Array<SynapsePayRest::Subnet>]
     def subnets(**options)
       Subnet.all(node: self, **options)
@@ -372,11 +372,11 @@ module SynapsePayRest
 
     # Queries the API for a subnet belonging to this node by subnet id
     # and returns a Subnet instance if found.
-    # 
+    #
     # @param id [String] id of the subnet to find
-    # 
+    #
     # @raise [SynapsePayRest::Error] if not found or other HTTP error
-    # 
+    #
     # @return [SynapsePayRest::Subnet]
     def find_subnet(id:)
       raise ArgumentError, 'id must be a String' unless id.is_a?(String)
@@ -386,18 +386,18 @@ module SynapsePayRest
 
     # Get statement for node
     # Only available for native synapse nodes
-    # 
+    #
     # @raise [SynapsePayRest::Error]
-    # 
+    #
     # @return [SynapsePayRest::Statement]
     def get_statement()
       Statement.by_node(client: self.user.client, node: self)
     end
 
-    # Deactivates the node. 
-    # 
+    # Deactivates the node.
+    #
     # @raise [SynapsePayRest::Error]
-    # 
+    #
     # @return [:success]
     def deactivate
       response = user.client.nodes.delete(user_id: user.id, node_id: id)
